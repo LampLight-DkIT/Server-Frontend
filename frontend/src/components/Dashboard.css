@@ -1,0 +1,102 @@
+.dashboard {
+  min-height: 100vh;
+  background-color: #f7fafc;
+}
+
+.dashboard-nav {
+  background: white;
+  padding: 1rem 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-brand {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-user span {
+  color: #4a5568;
+}
+
+.logout-btn {
+  padding: 0.5rem 1rem;
+  background: #e53e3e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.logout-btn:hover {
+  background: #c53030;
+}
+
+.dashboard-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.welcome-section {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.welcome-section h1 {
+  color: #2d3748;
+  margin: 0 0 1rem;
+}
+
+.welcome-section p {
+  color: #718096;
+  margin: 0;
+}
+
+.user-info {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.user-info h2 {
+  color: #2d3748;
+  margin: 0 0 1.5rem;
+}
+
+.info-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.info-item label {
+  font-weight: 500;
+  color: #4a5568;
+  min-width: 120px;
+}
+
+.info-item span {
+  color: #2d3748;
+} 
