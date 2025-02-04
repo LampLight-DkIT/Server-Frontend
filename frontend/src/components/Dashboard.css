@@ -42,10 +42,24 @@
   background: #c53030;
 }
 
-.dashboard-content {
+.dashboard-container {
+  padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+}
+
+.dashboard-main {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 20px;
+  align-items: start;
+}
+
+.dashboard-section {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
 }
 
 .welcome-section {
@@ -99,4 +113,15 @@
 
 .info-item span {
   color: #2d3748;
+}
+
+/* Responsive layout */
+@media (max-width: 768px) {
+  .dashboard-main {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-section {
+    margin-bottom: 20px;
+  }
 } 

@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
 const { validateRegistration, validateLogin } = require('../middleware/validation');
 const rateLimit = require('express-rate-limit');
+const bcrypt = require('bcryptjs');
+const config = require('../config');
 
 // Rate limiting for auth routes
 const authLimiter = rateLimit({
@@ -19,34 +21,37 @@ router.get('/test', (req, res) => {
 });
 
 // Register route with validation
-router.post('/register', validateRegistration, async (req, res) => {
+router.post('/register', async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // Check if user exists (case insensitive)
-    const existingUser = await User.findOne({
-      $or: [
-        { email: { $regex: new RegExp(`^${email}$`, 'i') } },
-        { username: { $regex: new RegExp(`^${username}$`, 'i') } }
-      ]
-    });
-
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({
-        message: existingUser.email.toLowerCase() === email.toLowerCase() 
-          ? 'Email already exists' 
-          : 'Username already exists'
-      });
+      return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     // Create new user
-    const user = new User({ username, email, password });
+    const user = new User({
+      username,
+      email,
+      password: hashedPassword
+    });
+
     await user.save();
 
     // Create token
     const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
+      { 
+        id: user._id,
+        username: user.username,
+        email: user.email
+      },
+      config.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
@@ -55,13 +60,12 @@ router.post('/register', validateRegistration, async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
-        email: user.email,
-        createdAt: user.createdAt
+        email: user.email
       }
     });
-  } catch (err) {
-    console.error('Register error:', err);
-    res.status(500).json({ message: 'Server error during registration' });
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ message: 'Error registering user' });
   }
 });
 
@@ -70,25 +74,26 @@ router.post('/login', authLimiter, validateLogin, async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user (case insensitive)
-    const user = await User.findOne({ 
-      email: { $regex: new RegExp(`^${email}$`, 'i') }
-    });
-
+    // Find user
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Validate password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
+    // Check password
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     // Create token
     const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
+      { 
+        id: user._id,
+        username: user.username,
+        email: user.email
+      },
+      config.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
@@ -97,13 +102,12 @@ router.post('/login', authLimiter, validateLogin, async (req, res) => {
       user: {
         id: user._id,
         username: user.username,
-        email: user.email,
-        createdAt: user.createdAt
+        email: user.email
       }
     });
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ message: 'Server error during login' });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Error logging in' });
   }
 });
 
