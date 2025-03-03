@@ -5,7 +5,7 @@ class SocketManager {
   constructor(server) {
     this.io = socketIo(server, {
       cors: {
-        origin: "*", // Be careful with this in production
+        origin: "*", 
         methods: ["GET", "POST"],
         credentials: true,
         allowedHeaders: ["Authorization"]

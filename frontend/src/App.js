@@ -49,7 +49,6 @@ function App() {
     <Router>
       <div className="App">
         <header className="App-header">
-          <h1>ResQ Dashboard</h1>
           {isAuthenticated && (
             <div className="user-info">
               <span>Welcome, {user?.username}</span>
