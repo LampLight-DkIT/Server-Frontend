@@ -9,7 +9,14 @@ const auth = (req, res, next) => {
     }
 
     const verified = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = verified;
+    
+    // Map the verified token to a consistent user object structure
+    req.user = {
+      id: verified.id || verified.sub,
+      username: verified.username || verified.name,
+      email: verified.email
+    };
+    
     next();
   } catch (err) {
     res.status(401).json({ message: 'Token verification failed, authorization denied' });

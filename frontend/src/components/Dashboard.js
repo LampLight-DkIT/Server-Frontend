@@ -1,4 +1,5 @@
 import React from 'react';
+import Chat from './Chat';
 import './Dashboard.css';
 
 function Dashboard({ user, onLogout }) {
@@ -19,37 +20,44 @@ function Dashboard({ user, onLogout }) {
   };
 
   return (
-    <div className="dashboard">
-      <nav className="dashboard-nav">
-        <div className="nav-brand">MyApp</div>
-        <div className="nav-user">
-          <span>Welcome, {user?.username || 'User'}</span>
-          <button onClick={onLogout} className="logout-btn">Logout</button>
-        </div>
-      </nav>
-      
-      <div className="dashboard-content">
-        <div className="welcome-section">
-          <h1>Welcome to Your Dashboard</h1>
-          <p>You're successfully logged in!</p>
-        </div>
+    <div className="dashboard-container">
+      <div className="dashboard-main">
+        <nav className="dashboard-nav">
+          <div className="nav-brand">MyApp</div>
+          <div className="nav-user">
+            <span>Welcome, {user?.username || 'User'}</span>
+            <button onClick={onLogout} className="logout-btn">Logout</button>
+          </div>
+        </nav>
         
-        <div className="user-info">
-          <h2>Your Profile</h2>
-          <div className="info-card">
-            <div className="info-item">
-              <label>Username:</label>
-              <span>{user?.username || 'N/A'}</span>
-            </div>
-            <div className="info-item">
-              <label>Email:</label>
-              <span>{user?.email || 'N/A'}</span>
-            </div>
-            <div className="info-item">
-              <label>Account Created:</label>
-              <span>{formatDate(user?.createdAt)}</span>
+        <div className="dashboard-content">
+          <div className="welcome-section">
+            <h1>Welcome to Your Dashboard</h1>
+            <p>You're successfully logged in!</p>
+          </div>
+          
+          <div className="user-info">
+            <h2>Your Profile</h2>
+            <div className="info-card">
+              <div className="info-item">
+                <label>Username:</label>
+                <span>{user?.username || 'N/A'}</span>
+              </div>
+              <div className="info-item">
+                <label>Email:</label>
+                <span>{user?.email || 'N/A'}</span>
+              </div>
+              <div className="info-item">
+                <label>Account Created:</label>
+                <span>{formatDate(user?.createdAt)}</span>
+              </div>
             </div>
           </div>
+        </div>
+        
+        {/* Chat section */}
+        <div className="dashboard-section">
+          <Chat user={user} />
         </div>
       </div>
     </div>
