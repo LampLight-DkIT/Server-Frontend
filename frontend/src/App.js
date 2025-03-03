@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
+import AlertDashboard from './components/AlertDashboard';
 import './App.css';
 
 function App() {
@@ -12,7 +13,6 @@ function App() {
     const token = localStorage.getItem('token');
     if (token) {
       setIsAuthenticated(true);
-      // Get user data if token exists
       fetchUserData(token);
     }
   }, []);
@@ -48,28 +48,41 @@ function App() {
   return (
     <Router>
       <div className="App">
-        <Routes>
-          <Route 
-            path="/" 
-            element={
-              !isAuthenticated ? (
-                <Login onLoginSuccess={handleLoginSuccess} />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
-            } 
-          />
-          <Route 
-            path="/dashboard" 
-            element={
-              isAuthenticated ? (
-                <Dashboard user={user} onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            } 
-          />
-        </Routes>
+        <header className="App-header">
+          {isAuthenticated && (
+            <div className="user-info">
+              <span>Welcome, {user?.username}</span>
+              <button onClick={handleLogout}>Logout</button>
+            </div>
+          )}
+        </header>
+        <main>
+          <Routes>
+            <Route 
+              path="/" 
+              element={
+                !isAuthenticated ? (
+                  <Login onLoginSuccess={handleLoginSuccess} />
+                ) : (
+                  <Navigate to="/dashboard" replace />
+                )
+              } 
+            />
+            <Route 
+              path="/dashboard" 
+              element={
+                isAuthenticated ? (
+                  <>
+                    <Dashboard user={user} onLogout={handleLogout} />
+                    <AlertDashboard />
+                  </>
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              } 
+            />
+          </Routes>
+        </main>
       </div>
     </Router>
   );
