@@ -1,162 +1,98 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { API_CONFIG } from '../config';
 import './Login.css';
 
 function Login({ onLoginSuccess }) {
-  const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
     password: ''
   });
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
-
-  const validateForm = () => {
-    const newErrors = {};
-    
-    if (!isLogin && (!formData.username || formData.username.length < 3)) {
-      newErrors.username = 'Username must be at least 3 characters';
-    }
-    
-    if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-    
-    if (!formData.password || formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    }
-
-    if (!isLogin && formData.password) {
-      if (!/(?=.*[a-z])/.test(formData.password)) {
-        newErrors.password = 'Password must contain at least one lowercase letter';
-      }
-      if (!/(?=.*[A-Z])/.test(formData.password)) {
-        newErrors.password = 'Password must contain at least one uppercase letter';
-      }
-      if (!/(?=.*\d)/.test(formData.password)) {
-        newErrors.password = 'Password must contain at least one number';
-      }
-      if (!/(?=.*[@$!%*?&])/.test(formData.password)) {
-        newErrors.password = 'Password must contain at least one special character (@$!%*?&)';
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+    setError(''); // Clear error when user types
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+    setIsLoading(true);
+    setError('');
 
-    setLoading(true);
     try {
-      const endpoint = isLogin ? '/login' : '/register';
-      const response = await axios.post(`http://localhost:5000/api/auth${endpoint}`, formData);
+      console.log('Attempting login with URL:', `${API_CONFIG.BASE_URL}${API_CONFIG.API_ENDPOINTS.AUTH}/login`);
       
-      onLoginSuccess(response.data.user, response.data.token);
+      const response = await axios.post(
+        `${API_CONFIG.BASE_URL}${API_CONFIG.API_ENDPOINTS.AUTH}/login`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('Login response:', response.data);
+
+      const { token, user } = response.data;
       
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'An error occurred';
-      setErrors(prev => ({
-        ...prev,
-        submit: errorMessage
-      }));
+      // Store token and user data
+      localStorage.setItem('token', token);
+      localStorage.setItem('user_data', JSON.stringify(user));
+
+      // Call the success handler
+      onLoginSuccess(user);
+      
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(
+        err.response?.data?.message || 
+        'Failed to connect to server. Please try again.'
+      );
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="login-container">
-      <div className="login-box">
-        <h1>{isLogin ? 'Welcome Back' : 'Create Account'}</h1>
-        <p className="subtitle">
-          {isLogin 
-            ? 'Please sign in to continue' 
-            : 'Fill in your details to get started'}
-        </p>
-        
-        {errors.submit && <div className="error-message">{errors.submit}</div>}
-        
+      <div className="login-card">
+        <h2>Login</h2>
         <form onSubmit={handleSubmit}>
-          {!isLogin && (
-            <div className="form-group">
-              <label>Username</label>
-              <input
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                placeholder="Enter your username"
-                className={errors.username ? 'error' : ''}
-                required={!isLogin}
-              />
-              {errors.username && <span className="field-error">{errors.username}</span>}
-            </div>
-          )}
-          
           <div className="form-group">
-            <label>Email</label>
+            <label htmlFor="email">Email</label>
             <input
               type="email"
+              id="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter your email"
-              className={errors.email ? 'error' : ''}
               required
+              disabled={isLoading}
             />
-            {errors.email && <span className="field-error">{errors.email}</span>}
           </div>
-          
           <div className="form-group">
-            <label>Password</label>
+            <label htmlFor="password">Password</label>
             <input
               type="password"
+              id="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Enter your password"
-              className={errors.password ? 'error' : ''}
               required
+              disabled={isLoading}
             />
-            {errors.password && <span className="field-error">{errors.password}</span>}
           </div>
-          
-          <button type="submit" className={loading ? 'loading' : ''} disabled={loading}>
-            {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+          {error && <div className="error-message">{error}</div>}
+          <button type="submit" disabled={isLoading}>
+            {isLoading ? 'Logging in...' : 'Login'}
           </button>
         </form>
-        
-        <p className="toggle-auth" onClick={() => {
-          setIsLogin(!isLogin);
-          setErrors({});
-          setFormData({ username: '', email: '', password: '' });
-        }}>
-          {isLogin 
-            ? "Don't have an account? Sign Up" 
-            : "Already have an account? Sign In"}
-        </p>
       </div>
     </div>
   );

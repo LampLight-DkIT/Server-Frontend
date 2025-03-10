@@ -2,12 +2,14 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const { Server } = require('socket.io');
+const http = require('http');
+const SocketManager = require('./socket/socketManager');
 
 // Load environment variables
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
 
 // Middleware
 app.use(cors({
@@ -26,85 +28,74 @@ const chatRoutes = require('./routes/chat');
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 
-// Database connection
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI);
-    console.log('Connected to MongoDB');
-  } catch (err) {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    message: 'Server is running',
+    env: process.env.NODE_ENV,
+    mongoUri: process.env.MONGODB_URI ? 'Set' : 'Not set',
+    frontendUrl: process.env.FRONTEND_URL
+  });
+});
+
+// Database connection with retry logic
+const connectDB = async (retries = 5) => {
+  while (retries) {
+    try {
+      await mongoose.connect(process.env.MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      });
+      console.log('Connected to MongoDB');
+      return true;
+    } catch (err) {
+      console.error(`MongoDB connection attempt failed. Retries left: ${retries}`);
+      console.error('Error:', err.message);
+      retries -= 1;
+      if (!retries) {
+        console.error('Failed to connect to MongoDB after all retries');
+        return false;
+      }
+      // Wait for 5 seconds before retrying
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+  }
+  return false;
+};
+
+// Initialize Socket Manager only after DB connection
+const initializeServer = async () => {
+  const dbConnected = await connectDB();
+  if (!dbConnected) {
+    console.error('Could not initialize server due to database connection failure');
+    return;
+  }
+
+  // Initialize Socket Manager
+  const socketManager = new SocketManager(server);
+
+  // Error handling middleware
+  app.use((err, req, res, next) => {
+    console.error('Error:', err.message);
+    console.error('Stack:', err.stack);
+    res.status(500).json({ 
+      message: 'Something went wrong!',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  });
+
+  // Start server if not in production (Vercel)
+  if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 5000;
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
   }
 };
 
-connectDB();
+// Initialize server
+initializeServer().catch(console.error);
 
-// Socket.io setup
-let io;
-const setupSocket = (server) => {
-  io = new Server(server, {
-    cors: {
-      origin: process.env.FRONTEND_URL || "*",
-      methods: ["GET", "POST"],
-      credentials: true
-    },
-    path: '/socket.io/'
-  });
-
-  // Socket authentication middleware
-  io.use(async (socket, next) => {
-    try {
-      const token = socket.handshake.auth.token;
-      if (!token) {
-        throw new Error('Authentication error');
-      }
-      // Verify token here
-      next();
-    } catch (err) {
-      next(new Error('Authentication error'));
-    }
-  });
-
-  io.on('connection', (socket) => {
-    console.log('Client connected:', socket.id);
-
-    socket.on('join', (data) => {
-      console.log('Client joined:', data);
-    });
-
-    socket.on('message', (message) => {
-      io.emit('message', message);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('Client disconnected:', socket.id);
-    });
-  });
-
-  return io;
-};
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
-});
-
-// For local development
-if (process.env.NODE_ENV !== 'production') {
-  const http = require('http');
-  const server = http.createServer(app);
-  setupSocket(server);
-  
-  const PORT = process.env.PORT || 5000;
-  server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`WebSocket server is ready for connections`);
-  });
-}
-
-// For Vercel
-module.exports = app;
-
-// Export the socket setup function
-module.exports.setupSocket = setupSocket; 
+// Export for Vercel
+module.exports = server; 

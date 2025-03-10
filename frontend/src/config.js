@@ -1,6 +1,10 @@
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://server-frontend-nc92-git-main-zjleees-projects.vercel.app'
+  : 'http://localhost:5000';
+
 export const API_CONFIG = {
-  BASE_URL: 'http://192.168.240.253:5000', // Your backend server URL
-  SOCKET_URL: 'http://192.168.240.253:5000', // Your WebSocket server URL (same as backend in this case)
+  BASE_URL: API_URL,
+  SOCKET_URL: API_URL,
   API_ENDPOINTS: {
     AUTH: '/api/auth',
     CHAT: '/api/chat'
